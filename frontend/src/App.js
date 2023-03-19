@@ -5,27 +5,22 @@ import ApiKeyInput from "./components/ApiKeyInput";
 import Chat from "./components/Chat";
 
 function App() {
-  const [pdfUploaded, setPdfUploaded] = useState(false);
-  const [apiKeySubmitted, setApiKeySubmitted] = useState(false);
+  const [step, setStep] = useState(0);
+  const [apiKey, setApiKey] = useState("");
 
-  const handlePdfUploaded = () => {
-    setPdfUploaded(true);
-  };
-
-  const handleApiKeySubmitted = () => {
-    setApiKeySubmitted(true);
+  const handleApiKeySubmit = (key) => {
+    setApiKey(key);
+    setStep(1);
   };
 
   return (
     <div className="App">
-      <h1>Chat with a PDF</h1>
-      {!pdfUploaded && <FileUpload onPdfUploaded={handlePdfUploaded} />}
-      {pdfUploaded && !apiKeySubmitted && (
-        <ApiKeyInput onApiKeySubmitted={handleApiKeySubmitted} />
-      )}
-      {pdfUploaded && apiKeySubmitted && <Chat />}
+      {step === 0 && <ApiKeyInput onSubmit={handleApiKeySubmit} />}
+      {step === 1 && <FileUpload apiKey={apiKey} />}
+      {step === 2 && <Chat apiKey={apiKey} />}
     </div>
   );
 }
+
 
 export default App;

@@ -11,7 +11,7 @@ function Chat() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await axios.post("/chat", { message: chatInput });
+    const response = await axios.post("/api/chat", { message: chatInput });
     setChatHistory([
       ...chatHistory,
       { role: "User", message: chatInput },

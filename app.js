@@ -1,51 +1,35 @@
 const express = require("express");
+const cors = require("cors");
 const multer = require("multer");
-const fs = require("fs");
-const pdf = require("pdf-parse");
-const openai = require("openai");
+const path = require("path");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "./uploads");
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, file.fieldname + "-" + Date.now() + path.extname(file.originalname));
   },
 });
 
 const upload = multer({ storage: storage });
 
-let pdfText = "";
-let openaiApiKey = "";
-
-app.post("/upload", upload.single("pdf"), async (req, res) => {
-  const dataBuffer = fs.readFileSync(req.file.path);
-  const data = await pdf(dataBuffer);
-  pdfText = data.text;
-  res.status(200).json({ message: "PDF uploaded and processed" });
+app.post("/api/upload", upload.single("pdf"), (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).send("No file provided");
+  }
+  res.status(200).send("File uploaded successfully");
+}, (error, req, res, next) => {
+  console.error("Error uploading file:", error.message);
+  res.status(500).send("Error uploading file");
 });
 
-app.post("/submit_key", (req, res) => {
-  openaiApiKey = req.body.api_key;
-  res.status(200).json({ message: "OpenAI key submitted" });
-});
-
-app.post("/chat", async (req, res) => {
-  openai.api_key = openaiApiKey;
-  const prompt = `${pdfText}\nUser: ${req.body.message}\nAI:`;
-  const response = await openai.Completion.create({
-    engine: "davinci-codex",
-    prompt: prompt,
-    max_tokens: 100,
-  });
-  res.status(200).json({ message: response.choices[0].text.trim() });
-});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
