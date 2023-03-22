@@ -1,11 +1,13 @@
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
 
-const { OpenAI } = require('openai'); // Update the import statement
+const { Configuration, OpenAIApi } = require('openai'); // Update the import statement
 
-const openai = new OpenAI(''); // Initialize the OpenAI instance
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-// ...
+const openai = new OpenAIApi(configuration); // Initialize the OpenAI instance
 
 const pdfToText = async (path) => {
   const data = await pdfParse(fs.readFileSync(path));
@@ -15,11 +17,6 @@ const pdfToText = async (path) => {
 
 exports.pdfToText = pdfToText; // Add this line
 
-// ...
-
-openai.apiKey = 'your_openai_api_key'; // Set your OpenAI API key
-
-// ...
 const textToChunks = (text) => {
   const maxLength = 2048; // Maximum length for a GPT-3 text input
   const regex = new RegExp(`.{1,${maxLength}}(\\s|$)`, 'g');
@@ -28,36 +25,47 @@ const textToChunks = (text) => {
 
 const generateAnswer = async (question) => {
   const inputs = chunks.map((chunk) => ({
-    'role': 'document',
-    'content': chunk,
+    role: 'document',
+    content: chunk,
   }));
 
   inputs.push({
-    'role': 'system',
-    'content': 'Please answer the following question based on the information provided in the document:',
+    role: 'system',
+    content:
+      'Please answer the following question based on the information provided in the document:',
   });
 
   inputs.push({
-    'role': 'user',
-    'content': question,
+    role: 'user',
+    content: question,
   });
 
   const prompt = {
-    'messages': inputs,
+    messages: inputs,
   };
 
-  
+  try {
+    const response = await openai.createCompletion({
+      model: 'text-davinci-002',
+      prompt: JSON.stringify(prompt),
+      max_tokens: 100,
+      n: 1,
+      stop: null,
+      temperature: 0.5,
+    });
 
-  const response = await openai.Completion.create({
-    engine: 'text-davinci-002',
-    prompt: JSON.stringify(prompt),
-    max_tokens: 100,
-    n: 1,
-    stop: null,
-    temperature: 0.5,
-  });
+    return response.data.choices[0].text;
+  } catch (error) {
+    if (error.response) {
+      console.log(error.response.status);
+      console.log(error.response.data);
+    } else {
+      console.log(error.message);
+    }
+  }
 
-  return response.choices[0].text.trim();
+  // Sending hard coded text if something goes wrong
+  return 'Answer not found';
 };
 
 module.exports = { pdfToText, textToChunks, generateAnswer };
