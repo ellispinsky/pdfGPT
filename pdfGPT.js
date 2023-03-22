@@ -1,20 +1,11 @@
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
-const tf = require('@tensorflow/tfjs-node');
-const use = require('@tensorflow-models/universal-sentence-encoder');
-const OpenAI = require('openai'); // Include OpenAI package
 
-OpenAI.apiKey = 'your_openai_api_key'; // Set your OpenAI API key
+const { OpenAI } = require('openai'); // Update the import statement
 
-let pdfText = '';
-let chunks = [];
-let model;
+const openai = new OpenAI(''); // Initialize the OpenAI instance
 
-const initModel = async () => {
-  model = await use.load();
-};
-
-initModel();
+// ...
 
 const pdfToText = async (path) => {
   const data = await pdfParse(fs.readFileSync(path));
@@ -22,6 +13,13 @@ const pdfToText = async (path) => {
   chunks = textToChunks(pdfText);
 };
 
+exports.pdfToText = pdfToText; // Add this line
+
+// ...
+
+openai.apiKey = 'your_openai_api_key'; // Set your OpenAI API key
+
+// ...
 const textToChunks = (text) => {
   const maxLength = 2048; // Maximum length for a GPT-3 text input
   const regex = new RegExp(`.{1,${maxLength}}(\\s|$)`, 'g');
@@ -48,7 +46,9 @@ const generateAnswer = async (question) => {
     'messages': inputs,
   };
 
-  const response = await OpenAI.Completion.create({
+  
+
+  const response = await openai.Completion.create({
     engine: 'text-davinci-002',
     prompt: JSON.stringify(prompt),
     max_tokens: 100,
